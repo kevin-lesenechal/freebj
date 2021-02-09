@@ -1,0 +1,272 @@
+.TH freebj 1 "10 February 2021"
+.SH NAME
+freebj \- Blackjack strategy simulator
+
+.SH SYNOPSIS
+.B freebj [OPTION...]
+
+.SH DESCRIPTION
+Simulate Blackjack games given a playing strategy and a set of rules. FreeBJ is
+used to optimize and test game strategies typically using card counting.
+
+FreeBJ is able to count cards using the hi-lo system and adapt its bet based on
+a programmable betting strategy. The simulator also supports playing deviations
+and one can dynamically add their own deviations.
+
+FreeBJ is a command-line interface program that prints on its standard output a
+JSON of all the statistics gathered; the program can also output on demande a
+CSV of bankroll samples to have a look on the evolution of your capital
+throughout the playing session.
+
+.SH OPTIONS
+
+.TP
+\fB-a\fR \fIACTION\fR
+Always play ACTION as the first action on each hand, bypassing strategies.
+Possible actions: +: hit; =: stand; D: double; V: split; #: surrender.
+
+.TP
+\fB--ahc\fR
+Use the American holecard game rule.
+
+.TP
+\fB-b\fR, \fB--bet\fR \fIBET\fR
+Specify the base bet; with card counting, this is the bet placed with a true
+count of zero.
+
+.TP
+\fB--bet-max-tc\fR \fITC\fR
+The maximum true count value to take into account for the betting strategy,
+TC above won't increase the bet.
+
+.TP
+\fB--bet-neg-tc\fR \fINEG_BET\fR
+The bet to place when true count is zero or negative.
+
+.TP
+\fB--bet-per-tc\fR \fIBET_PER_TC\fR
+The amount to increase the bet with for each point of true count.
+
+.TP
+\fB-c\fR \fICARD,CARD[,CARD...]\fR
+Set the cards each player will start with separated by commas, there must be at
+least two cards.
+
+.TP
+\fB-D\fR, \fB--add-deviation\fR \fIDEVIATION\fR...
+Add a new basic strategy deviation using the \fIDEVIATION\fR directive; its
+syntax is \fI"<HAND>vs<DEALER>:('<'|'>')<TC><ACTION>"\fR, \fIHAND\fR can
+represent a hard total ("18"), a soft total ("A7"), or a pair
+("8/8", "A/A", "T/T", ...); \fIDEALER\fR is the dealer's upcard (number or "A");
+\fITC\fR is the true count above/equal ('>') or under/equal ('<') which to apply
+the \fIACTION\fR deviation.
+
+Possible actions: +: hit; =: stand; D: double; V: split; S: surrender.
+
+This option can be repeated to add more deviations; if \fB--deviations\fR is
+given, this will override default playing deviations.
+
+Example: "16vs10:>+1=" (stand at TC 1 or above with a hard 16 against a dealer 10).
+
+.TP
+\fB-d\fR \fIDECKS\fR
+The number of card decks to play.
+
+Default: 6.
+
+.TP
+\fB--das\fR
+Allow doubling down on split hands (double after split - DAS).
+
+.TP
+\fB--db-any\fR
+Allow doubling down on any hand regardless of the number of cards.
+
+.TP
+\fB--db-any2\fR
+Allow doubling down on any hand on the first two cards only.
+
+.TP
+\fB--db-hard-10-11\fR
+Allow doubling down on hard hands with a total of 10 or 11 on the first two
+cards only.
+
+.TP
+\fB--db-hard-9-11\fR
+Allow doubling down on hard hands with a total of 9, 10, or 11 on the first two
+cards only.
+
+.TP
+\fB--db-none\fR
+Disallow doubling down on all hands.
+
+.TP
+\fB--dealer\fR \fICARD[,CARD...]\fR
+Set the cards the dealer will start with separated by commas.
+
+Example: A.
+
+.TP
+\fB--deviations\fR
+Enable playing deviations, this requires card counting.
+
+.TP
+\fB--dry-run\fR
+Do not perform any actual work; useful to extract simulation meta information
+such as game rules.
+
+.TP
+\fB--enhc\fR
+Use the European no-holecard game rule.
+
+.TP
+\fB--esurr\fR
+Allow early surrender.
+
+.TP
+\fB--force-tc\fR \fITC\fR
+Force a specific true count value in the shoe for each round run; this requires
+reshuffling the shoe before each round and remove random cards to achieve the
+desired true count, causing some performance penalties.
+
+.TP
+\fB-h\fR, \fB--help\fR
+Print help information.
+
+.TP
+\fB--h17\fR
+Hit on dealer soft 17 (H17).
+
+.TP
+\fB--hilo\fR
+Count cards using hilo system, this will adapt the betting strategy but won't
+enable playing deviations.
+
+.TP
+\fB--holecarding\fR
+Use holecarding strategy where the dealer's holecard is known to the players.
+Requires \fB--ahc\fR.
+
+.TP
+\fB-j\fR \fIJOBS\fR
+The number of processing jobs, should be equal to the number of CPUs.
+
+.TP
+\fB--lsurr\fR
+Allow late surrender.
+
+.TP
+\fB--max-splits\fR \fIMAX_SPLITS\fR
+The maximum number of hands a player can get from splitting.
+
+Default: 4.
+
+.TP
+\fB-n\fR \fIROUNDS\fR
+The number of game rounds to simulate. Accepts 'k', 'M', and 'G' suffixes.
+
+.TP
+\fB--no-das\fR
+Disallow doubling down on split hands (double after split - DAS).
+
+.TP
+\fB--no-playAA\fR
+Disallow the player to play their hand after splitting aces, the split hands
+will receive only one card and then closed.
+
+.TP
+\fB--no-surr\fR
+Disallow any form of surrender.
+
+.TP
+\fB-p\fR \fIPENETRATION\fR
+Set the penetration ratio, i.e. the proportion of cards to deal from the shoe
+before shuffling. Can be represented as a percentage (e.g. "80%" for 4/5
+penetration), or as a number of card decks (e.g. "3d"), or a number of cards to
+deal (e.g. "100"), or a ratio (e.g. "5/6").
+
+Default: "80%".
+
+Example: "100M".
+
+.TP
+\fB--playAA\fR
+Allow the player to play their hand after splitting aces.
+
+.TP
+\fB--s17\fR
+Stand on dealer soft 17 (S17).
+
+.TP
+\fB--shoe-file\fR \fISHOE_FILE\fR
+Provide a binary file of cards to load into the card shoe. The file contains
+bytes from 1 to 10 included.
+
+Example: "8,A,10".
+
+.TP
+\fB-V\fR, \fB--version\fR
+Print version information.
+
+.TP
+\fB-v\fR
+Print verbose details on each round.
+
+.SH JSON OUTPUT
+
+When finished, FreeBJ prints to its standard output (fd 1) a JSON document of
+the simulation's statistics including the expected value (EV) and standard
+deviation.
+
+.TP
+\fBrules\fR
+The game rules used for the simulation.
+
+.RS 8
+.TP
+\fBgame_type\fR
+(str) \fIahc\fR for American holecard game, \fIenhc\fR for European no-holecard game.
+.TP
+\fBsoft17\fR
+(str) \fIs17\fR for stand on dealer soft 17, \fIh17\fR for hit dealer soft 17.
+.TP
+\fBdas\fR
+(bool) Whether to allow double-down after split or not.
+.TP
+\fBbj_pays\fR
+(float) How much a player's Blackjack pays for a bet of 1.0.
+.TP
+\fBdouble_down\fR
+(str) The doubling-down policy: \fIno_double\fR always disallow double-down;
+\fIany_hand\fR always allow double-down even with more than two cards;
+\fIany_two\fR allow double-down on any hand with two cards; \fIhard_9_to_11\fR
+allow double-down only on hard hands with two cards and a total from 9 to 11
+included; \fIhard_10_to_11\fR allow double-down only on hard hands with two
+cards and a total from 10 to 11 included.
+.TP
+\fBsurrender\fR
+(str) \fIno_surrender\fR: surrendering is disallowed; \fIearly_surrender\fR:
+early surrendering is allowed; \fIlate_surrender\fR: late surrendering is
+allowed.
+.TP
+\fBplay_ace_pairs\fR
+(bool) Whether to allow the player to play a hand resulting from the splitting
+of a pair of aces.
+.TP
+\fBmax_splits\fR
+(int) The maximum number of hands a player can have from splitting pairs; 1
+means no splitting is allowed.
+.TP
+\fBdecks\fR
+(int) The number of card decks used.
+.TP
+\fBpenetration_cards\fR
+(int) The number of cards actually played from the shoe before reshuffling.
+.RE
+
+.TP
+\fBev\fR
+(float) The expected value, the average win or loss per round.
+.TP
+\fBstddev\fR
+(float) The standard deviation of the rounds' wins and losses.

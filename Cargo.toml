@@ -1,0 +1,34 @@
+[package]
+name = "freebj"
+version = "1.0.0"
+authors = ["Kévin Lesénéchal <kevin.lesenechal@gmail.com>"]
+description = "Blackjack strategy simulator"
+edition = "2018"
+license = "MIT"
+homepage = "https://freebj.lesenechal.fr/"
+repository = "https://github.com/kevin-lesenechal/freebj"
+categories = ["science", "simulation"]
+keywords = ["blackjack", "card-counting"]
+
+[lib]
+name = "freebj"
+path = "src/lib.rs"
+
+[[bin]]
+name = "freebj"
+path = "src/main.rs"
+
+[profile.release]
+lto = true
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+clap = "~2.27.0"
+arrayvec = "0.5.2"
+bitflags = "1.2.1"
+rand = { version = "0.7.3", features = ["small_rng"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+crossbeam = "0.8.0"
+regex = "1.4.2"
