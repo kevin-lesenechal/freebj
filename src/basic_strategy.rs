@@ -4,8 +4,7 @@ use crate::card::Card;
 use crate::strategy::Decision::*;
 use crate::game_rules::GameType::Ahc;
 use crate::game_rules::Soft17::{H17, S17};
-use bitflags::_core::convert::TryFrom;
-use regex::Regex;
+use crate::deviation::{Deviation, DeviationTable};
 
 static HARD_TABLE: [&[u8; 11]; 17] = [
     // A23456789J
@@ -89,136 +88,6 @@ pub struct BasicStrategy {
     dev_hard_table: Box<[[u8; 40]; 17]>,
     dev_soft_table: Box<[[u8; 40]; 10]>,
     dev_pair_table: Box<[[u8; 40]; 10]>,
-}
-
-#[derive(Debug, PartialEq)]
-pub enum DevOverride {
-    AboveEqual(f32, u8),
-    UnderEqual(f32, u8),
-}
-
-impl ToString for DevOverride {
-    fn to_string(&self) -> String {
-        match self {
-            Self::AboveEqual(tc, a) => format!(">{:+}{}", tc, *a as char),
-            Self::UnderEqual(tc, a) => format!("<{:+}{}", tc, *a as char),
-        }
-    }
-}
-
-impl TryFrom<&str> for DevOverride {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let regex = Regex::new(r"^([<>])([+-]?\d+(?:\.\d+)?)(.)$").unwrap();
-
-        if let Some(c) = regex.captures_iter(value).next() {
-            let tc = c[2].parse()
-                .map_err(|e| format!("Invalid true count: {}", e))?;
-            let action = c[3].as_bytes();
-
-            if action.len() != 1 {
-                return Err(String::from("Invalid action"));
-            }
-            let action = action[0];
-
-            if !"+=DdV*?@h&SsUuEe".as_bytes().into_iter().any(|&c| c == action) {
-                return Err(String::from("Invalid action"));
-            }
-
-            Ok(match c[1].as_bytes()[0] {
-                b'>' => DevOverride::AboveEqual(tc, action),
-                b'<' => DevOverride::UnderEqual(tc, action),
-                _ => unreachable!(),
-            })
-        } else {
-            Err(String::from("Invalid syntax"))
-        }
-    }
-}
-
-#[derive(Debug, PartialEq)]
-pub enum DeviationTable {
-    HardTable,
-    SoftTable,
-    PairTable,
-}
-
-#[derive(Debug, PartialEq)]
-pub struct Deviation {
-    table: DeviationTable,
-    row: u8,
-    dealer: u8,
-    action: DevOverride,
-}
-
-impl TryFrom<&str> for Deviation {
-    type Error = String;
-
-    fn try_from(value: &str) -> Result<Self, Self::Error> {
-        let regex = Regex::new(r"^(\d+|[0-9AT]/[0-9AT]|A(?:\d+|A))vs(\d+|A):(.+)$").unwrap();
-
-        if let Some(c) = regex.captures_iter(value).next() {
-            let table;
-            let row;
-
-            if c[1].contains("/") {
-                table = DeviationTable::PairTable;
-                let pair = &c[1][0..c[1].find('/').unwrap()];
-                if pair == "A" {
-                    row = 9;
-                } else if pair == "T" {
-                    row = 0;
-                } else {
-                    let pair: u8 = pair.parse()
-                        .map_err(|_| String::from("Invalid syntax"))?;
-                    if pair < 1 || pair > 10 {
-                        return Err(String::from("Invalid pair"));
-                    }
-                    row = 10 - pair;
-                }
-            } else if c[1].as_bytes()[0] == b'A' {
-                table = DeviationTable::SoftTable;
-                if c[1].as_bytes()[1] == b'A' {
-                    row = 9;
-                } else {
-                    let card: u8 = c[1][1..].parse()
-                        .map_err(|_| String::from("Invalid syntax"))?;
-                    if card < 1 || card > 10 {
-                        return Err(String::from("Invalid soft total"));
-                    }
-                    row = 10 - card;
-                }
-            } else {
-                table = DeviationTable::HardTable;
-                let total: u8 = c[1].parse()
-                    .map_err(|_| String::from("Invalid syntax"))?;
-                if total > 21 || total < 4 {
-                    return Err(String::from("Invalid hard total"));
-                }
-                row = 20 - total;
-            }
-
-            let dealer = if &c[2] == "A" {
-                1
-            } else {
-                c[2].parse().map_err(|e| format!("Invalid dealer card: {}", e))?
-            };
-            if dealer == 0 || dealer > 10 {
-                return Err(String::from("Invalid dealer card"));
-            }
-
-            let action = DevOverride::try_from(&c[3])?;
-            Ok(Deviation {
-                table,
-                row,
-                dealer,
-                action,
-            })
-        } else {
-            Err(String::from("Invalid syntax"))
-        }
-    }
 }
 
 impl BasicStrategy {
@@ -438,14 +307,13 @@ impl Strategy for BasicStrategy {
 mod tests {
     use crate::strategy::{Decision, GameContext, Strategy};
     use crate::card::Card;
-    use crate::basic_strategy::{BasicStrategy, DevOverride, Deviation};
+    use crate::basic_strategy::BasicStrategy;
     use crate::game_rules::GameRules;
     use crate::strategy::Decision::*;
     use crate::hand::Hand;
     use crate::test_utils::make_rules;
-    use crate::basic_strategy::DeviationTable::{HardTable, SoftTable, PairTable};
-    use crate::basic_strategy::DevOverride::{AboveEqual, UnderEqual};
-    use std::convert::TryFrom;
+    use crate::deviation::Deviation;
+    use std::str::FromStr;
 
     #[test]
     fn it_plays_hard_hands() {
@@ -644,9 +512,9 @@ mod tests {
         let mut game = make_context(&rules, 0);
 
         let mut strat = BasicStrategy::new(true);
-        strat.add_deviation(Deviation::try_from("20vs8:>+2D").unwrap());
-        strat.add_deviation(Deviation::try_from("T/Tvs8:>+5V").unwrap());
-        strat.add_deviation(Deviation::try_from("A5vs2:<-2D").unwrap());
+        strat.add_deviation(Deviation::from_str("20vs8:>+2D").unwrap());
+        strat.add_deviation(Deviation::from_str("T/Tvs8:>+5V").unwrap());
+        strat.add_deviation(Deviation::from_str("A5vs2:<-2D").unwrap());
 
         game.true_count = 0.0;
         assert_eq!(strat.player_turn(&game, Card(8),
@@ -680,103 +548,6 @@ mod tests {
         assert_eq!(strat.player_turn(&game, Card(3),
                                      &make_player_hand(&[1, 5])),
                    Decision::Hit);
-    }
-
-    #[test]
-    fn it_parses_dev_override() {
-        assert_eq!(DevOverride::try_from(">3+"),
-                   Ok(DevOverride::AboveEqual(3.0, b'+')));
-        assert_eq!(DevOverride::try_from(">+8D"),
-                   Ok(DevOverride::AboveEqual(8.0, b'D')));
-        assert_eq!(DevOverride::try_from("<0="),
-                   Ok(DevOverride::UnderEqual(0.0, b'=')));
-        assert_eq!(DevOverride::try_from("<0.5="),
-                   Ok(DevOverride::UnderEqual(0.5, b'=')));
-        assert_eq!(DevOverride::try_from("<-2="),
-                   Ok(DevOverride::UnderEqual(-2.0, b'=')));
-
-        assert_eq!(DevOverride::try_from("foo"),
-                   Err(String::from("Invalid syntax")));
-        assert_eq!(DevOverride::try_from(">a+"),
-                   Err(String::from("Invalid syntax")));
-        assert_eq!(DevOverride::try_from("=2+"),
-                   Err(String::from("Invalid syntax")));
-        assert_eq!(DevOverride::try_from(">3#"),
-                   Err(String::from("Invalid action")));
-    }
-
-    #[test]
-    fn it_parses_deviation() {
-        assert_eq!(Deviation::try_from("16vs10:>+1="),
-                   Ok(Deviation{
-                       table: HardTable,
-                       row: 4,
-                       dealer: 10,
-                       action: AboveEqual(1.0, b'=')
-                   }));
-        assert_eq!(Deviation::try_from("20vs2:>-1="),
-                   Ok(Deviation{
-                       table: HardTable,
-                       row: 0,
-                       dealer: 2,
-                       action: AboveEqual(-1.0, b'=')
-                   }));
-        assert_eq!(Deviation::try_from("4vsA:>-1="),
-                   Ok(Deviation{
-                       table: HardTable,
-                       row: 16,
-                       dealer: 1,
-                       action: AboveEqual(-1.0, b'=')
-                   }));
-        assert_eq!(Deviation::try_from("A6vs8:>-1="),
-                   Ok(Deviation{
-                       table: SoftTable,
-                       row: 4,
-                       dealer: 8,
-                       action: AboveEqual(-1.0, b'=')
-                   }));
-        assert_eq!(Deviation::try_from("A10vs8:>-1="),
-                   Ok(Deviation{
-                       table: SoftTable,
-                       row: 0,
-                       dealer: 8,
-                       action: AboveEqual(-1.0, b'=')
-                   }));
-        assert_eq!(Deviation::try_from("A2vsA:>-1="),
-                   Ok(Deviation{
-                       table: SoftTable,
-                       row: 8,
-                       dealer: 1,
-                       action: AboveEqual(-1.0, b'=')
-                   }));
-        assert_eq!(Deviation::try_from("AAvs8:>-1="),
-                   Ok(Deviation{
-                       table: SoftTable,
-                       row: 9,
-                       dealer: 8,
-                       action: AboveEqual(-1.0, b'=')
-                   }));
-        assert_eq!(Deviation::try_from("7/7vs7:<+1D"),
-                   Ok(Deviation{
-                       table: PairTable,
-                       row: 3,
-                       dealer: 7,
-                       action: UnderEqual(1.0, b'D')
-                   }));
-        assert_eq!(Deviation::try_from("A/Avs7:<+1D"),
-                   Ok(Deviation{
-                       table: PairTable,
-                       row: 9,
-                       dealer: 7,
-                       action: UnderEqual(1.0, b'D')
-                   }));
-        assert_eq!(Deviation::try_from("T/Tvs7:<+1D"),
-                   Ok(Deviation{
-                       table: PairTable,
-                       row: 0,
-                       dealer: 7,
-                       action: UnderEqual(1.0, b'D')
-                   }));
     }
 
     const AHC: u32          = 0;

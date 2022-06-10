@@ -1,7 +1,7 @@
 use serde::Serialize;
 
-#[serde(rename_all = "snake_case")]
 #[derive(Debug, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum GameType {
     /// American holecard game
     Ahc,
@@ -9,8 +9,8 @@ pub enum GameType {
     Enhc,
 }
 
-#[serde(rename_all = "snake_case")]
 #[derive(Debug, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum Soft17 {
     /// Hit soft 17 hands
     S17,
@@ -18,8 +18,8 @@ pub enum Soft17 {
     H17,
 }
 
-#[serde(rename_all = "snake_case")]
 #[derive(Debug, PartialEq, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum SurrenderPolicy {
     /// Do not allow surrender
     NoSurrender,
@@ -29,8 +29,8 @@ pub enum SurrenderPolicy {
     LateSurrender,
 }
 
-#[serde(rename_all = "snake_case")]
 #[derive(Debug, PartialEq, Copy, Clone, Serialize)]
+#[serde(rename_all = "snake_case")]
 pub enum DoublePolicy {
     /// Do not allow doubling-down for any hand
     NoDouble,

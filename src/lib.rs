@@ -9,6 +9,7 @@ pub mod hand_stats;
 pub mod game_rules;
 pub mod strategy;
 pub mod basic_strategy;
+pub mod deviation;
 pub mod round;
 pub mod shoe;
 pub mod running_stats;

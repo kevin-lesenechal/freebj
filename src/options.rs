@@ -10,7 +10,8 @@ use freebj::strategy::Decision;
 use std::collections::VecDeque;
 use std::convert::TryFrom;
 use regex::Regex;
-use freebj::basic_strategy::Deviation;
+use freebj::deviation::Deviation;
+use std::str::FromStr;
 
 #[derive(Debug)]
 pub struct Options {
@@ -526,7 +527,7 @@ impl Options {
             }
             for dev in iter {
                 self.more_devs.push(
-                    Deviation::try_from(dev)
+                    Deviation::from_str(dev)
                         .map_err(|e| format!("-D, --add-deviation: {}", e))?
                 );
             }

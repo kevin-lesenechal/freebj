@@ -457,8 +457,5 @@ mod tests {
         assert!(strategy.is_empty(), "Not all decisions were taken");
     }
 
-    #[test]
-    fn it_overrides_surrender() {
-        unimplemented!()
-    }
+    // TODO: test surrender override
 }
