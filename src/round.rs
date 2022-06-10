@@ -256,12 +256,16 @@ impl<'a> Round<'a> {
                     assert!(self.context.may_split,
                             "Splitting is forbidden");
                     let id = hand.id;
+                    let bet = hand.bet;
+
                     self.hands_per_player[id as usize] += 1;
                     let common = hand[0];
                     self.hands[i] = Hand::from(&[common, self.shoe.pick()][..]);
+                    self.hands[i].bet = bet;
                     self.hands[i].split();
                     let mut new_hand = Hand::from(&[common, self.shoe.pick()][..]);
                     new_hand.id = id;
+                    new_hand.bet = bet;
                     new_hand.split();
                     self.hands.push(new_hand);
 
@@ -302,11 +306,11 @@ mod tests {
     #[test]
     fn it_wins_a_hand() {
         //           Tt Wo Lo Pu Bu BJ Db Sp In Su
-        test_result(&[10, 7, 9, 10], AHC|H17, &[Stand], 1.0,
+        test_result(&[10, 7, 9, 10], AHC|H17, &[Stand], 10.0,
                     (1, 1, 0, 0, 0, 0, 0, 0, 0, 0));
-        test_result(&[6, 7, 1, 10, 6, 5], AHC|S17, &[Hit, Hit,Stand], 1.0,
+        test_result(&[6, 7, 1, 10, 6, 5], AHC|S17, &[Hit, Hit,Stand], 10.0,
                     (1, 1, 0, 0, 0, 0, 0, 0, 0, 0));
-        test_result(&[10, 6, 8, 1], AHC|S17, &[Stand], 1.0,
+        test_result(&[10, 6, 8, 1], AHC|S17, &[Stand], 10.0,
                     (1, 1, 0, 0, 0, 0, 0, 0, 0, 0));
     }
 
@@ -314,41 +318,41 @@ mod tests {
     fn it_loses_a_hand() {
         //                 Tt Wo Lo Pu Bu BJ Db Sp In Su
         test_result(&[10, 6, 8, 1, 9, 4], AHC|H17, &[Stand],
-                    -1.0, (1, 0, 1, 0, 0, 0, 0, 0, 0, 0));
+                    -10.0, (1, 0, 1, 0, 0, 0, 0, 0, 0, 0));
     }
 
     #[test]
     fn it_busts_a_hand() {
         test_result(&[5, 8, 6, 2, 2, 3, 5, 1, 6, 8], AHC|S17, &[Hit, Hit, Hit, Hit],
-                    -1.0, (1, 0, 1, 0, 1, 0, 0, 0, 0, 0));
+                    -10.0, (1, 0, 1, 0, 1, 0, 0, 0, 0, 0));
         test_result(&[5, 8, 6, 2, 3, 5, 1, 2, 6, 5], AHC|S17, &[Hit, Hit, Hit, Hit],
-                    -1.0, (1, 0, 1, 0, 1, 0, 0, 0, 0, 0));
+                    -10.0, (1, 0, 1, 0, 1, 0, 0, 0, 0, 0));
     }
 
     #[test]
     fn it_doubles_down() {
-        test_result(&[6, 7, 5, 10, 9], AHC|S17, &[Double], 2.0,
+        test_result(&[6, 7, 5, 10, 9], AHC|S17, &[Double], 20.0,
                     (1, 1, 0, 0, 0, 0, 1, 0, 0, 0));
         test_result(&[6, 7, 5, 10, 6], AHC|S17, &[Double], 0.0,
                     (1, 0, 0, 1, 0, 0, 1, 0, 0, 0));
-        test_result(&[6, 7, 5, 10, 2], AHC|S17, &[Double], -2.0,
+        test_result(&[6, 7, 5, 10, 2], AHC|S17, &[Double], -20.0,
                     (1, 0, 1, 0, 0, 0, 1, 0, 0, 0));
     }
 
     #[test]
     fn it_insures() {
         //           Tt Wo Lo Pu Bu BJ Db Sp In Su
-        test_result(&[8, 10, 10, 1], AHC|S17|INSURE, &[], -1.0,
+        test_result(&[8, 10, 10, 1], AHC|S17|INSURE, &[], -10.0,
                     (1, 0, 1, 0, 0, 0, 0, 0, 0, 0));
         test_result(&[8, 1, 10, 10], AHC|S17|INSURE, &[], 0.0,
                     (1, 0, 1, 0, 0, 0, 0, 0, 1, 0));
-        test_result(&[1, 1, 10, 10], AHC|S17|INSURE, &[], 1.0,
+        test_result(&[1, 1, 10, 10], AHC|S17|INSURE, &[], 10.0,
                     (1, 0, 0, 1, 0, 1, 0, 0, 1, 0));
-        test_result(&[1, 1, 10, 9], AHC|S17|INSURE, &[Stand], 1.0,
+        test_result(&[1, 1, 10, 9], AHC|S17|INSURE, &[Stand], 10.0,
                     (1, 1, 0, 0, 0, 1, 0, 0, 1, 0));
-        test_result(&[10, 1, 10, 9], AHC|S17|INSURE, &[Stand], -0.5,
+        test_result(&[10, 1, 10, 9], AHC|S17|INSURE, &[Stand], -5.0,
                     (1, 0, 0, 1, 0, 0, 0, 0, 1, 0));
-        test_result(&[10, 1, 9, 9], AHC|S17|INSURE, &[Stand], -1.5,
+        test_result(&[10, 1, 9, 9], AHC|S17|INSURE, &[Stand], -15.0,
                     (1, 0, 1, 0, 0, 0, 0, 0, 1, 0));
         //           Tt Wo Lo Pu Bu BJ Db Sp In Su
     }
@@ -357,19 +361,19 @@ mod tests {
     fn it_split_pairs() {
         //                 Tt Wo Lo Pu Bu BJ Db Sp In Su
         test_result(&[8, 10, 8, 9, 10, 10], AHC|S17, &[Split, Stand, Stand],
-                    -2.0, (2, 0, 2, 0, 0, 0, 0, 2, 0, 0));
+                    -20.0, (2, 0, 2, 0, 0, 0, 0, 2, 0, 0));
         test_result(&[8, 10, 8, 7, 10, 5], AHC|S17, &[Split, Stand, Stand],
                      0.0, (2, 1, 1, 0, 0, 0, 0, 2, 0, 0));
         test_result(&[1, 10, 1, 7, 10, 10], AHC|S17, &[Split],
-                     2.0, (2, 2, 0, 0, 0, 0, 0, 2, 0, 0));
+                     20.0, (2, 2, 0, 0, 0, 0, 0, 2, 0, 0));
         test_result(&[1, 10, 1, 7, 4, 5], AHC|S17, &[Split],
-                    -2.0, (2, 0, 2, 0, 0, 0, 0, 2, 0, 0));
+                    -20.0, (2, 0, 2, 0, 0, 0, 0, 2, 0, 0));
         test_result(&[1, 10, 1, 7, 4, 5, 4, 2], AHC|S17|HAA,
                     &[Split, Hit, Stand, Hit, Stand],
-                     2.0, (2, 2, 0, 0, 0, 0, 0, 2, 0, 0));
+                     20.0, (2, 2, 0, 0, 0, 0, 0, 2, 0, 0));
         test_result(&[2, 7, 2, 10, 2, 9, 9, 8, 2, 2, 8, 2, 10, 10], AHC|S17,
                     &[Split, Split, Hit, Hit, Hit, Hit, Hit, Hit, Stand],
-                    -1.0, (3, 1, 2, 0, 2, 0, 0, 3, 0, 0));
+                    -10.0, (3, 1, 2, 0, 2, 0, 0, 3, 0, 0));
         //                 Tt Wo Lo Pu Bu BJ Db Sp In Su
     }
 
@@ -437,7 +441,7 @@ mod tests {
             opts & INSURE > 0,
             opts & SURRENDER > 0,
         );
-        let betting = FixedBet(1.0);
+        let betting = FixedBet(10.0);
         let mut shoe = QueuedShoe::from_ints(cards);
         let round = Round::new(&rules, &strategy, &betting, &mut shoe,
                                1, false, None, None,
