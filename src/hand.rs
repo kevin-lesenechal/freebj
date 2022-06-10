@@ -6,7 +6,7 @@ use bitflags::_core::fmt::{Display, Formatter};
 
 #[derive(Debug)]
 pub struct Hand {
-    cards:          ArrayVec<[Card; 16]>,
+    cards:          ArrayVec<Card, 16>,
     value:          u8,
     is_soft:        bool,
     is_busted:      bool,

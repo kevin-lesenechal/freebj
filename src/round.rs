@@ -23,7 +23,7 @@ pub struct Round<'a>
     betting_strategy: &'a dyn BettingStrategy,
     shoe:       &'a mut dyn CardShoe,
     dealer:     Hand,
-    hands:      ArrayVec<[Hand; 32]>,
+    hands:      ArrayVec<Hand, 32>,
     hands_per_player: [u8; 7],
     start_cards: &'a VecDeque<Card>,
     dealer_cards: vec_deque::Iter<'a, Card>,

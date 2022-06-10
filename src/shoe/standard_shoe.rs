@@ -68,7 +68,7 @@ impl StandardShoe {
     }
 
     fn remove_high_card(&mut self) {
-        let (card, card_alt) = if self.rng.gen_range(0, 4) == 0 {
+        let (card, card_alt) = if self.rng.gen_range(0..4) == 0 {
             (Card(1), Card(10))
         } else {
             (Card(10), Card(1))
@@ -79,7 +79,7 @@ impl StandardShoe {
     }
 
     fn remove_low_card(&mut self) {
-        let card_orig = self.rng.gen_range(2, 7);
+        let card_orig = self.rng.gen_range(2..7);
         let mut card = card_orig;
         loop {
             if self.try_pick_first(Card(card)).is_some() {
