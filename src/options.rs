@@ -20,10 +20,10 @@ pub struct Options {
     /// The number of processing jobs (threads) the simulator will use
     pub jobs:           u32,
 
-    /// Wether to play American holecard (AHC) or European no-holecard (ENHC)
+    /// Whether to play American holecard (AHC) or European no-holecard (ENHC)
     pub game_type:      GameType,
 
-    /// Wether to hit dealer soft 17, or stand on dealer soft 17
+    /// Whether to hit dealer soft 17, or stand on dealer soft 17
     pub soft17:         Soft17,
 
     /// The amount of money the player starts with

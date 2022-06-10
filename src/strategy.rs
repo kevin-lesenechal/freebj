@@ -21,10 +21,10 @@ pub struct GameContext<'a> {
     /// The current game rules at the table
     pub rules:      &'a GameRules,
 
-    /// Wether the player may split its pair or not
+    /// Whether the player may split its pair or not
     pub may_split:  bool,
 
-    /// Wether the player may double down on his hand
+    /// Whether the player may double down on his hand
     pub may_double: bool,
 
     /// The current true count of the shoe

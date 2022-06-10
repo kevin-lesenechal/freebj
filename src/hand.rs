@@ -17,16 +17,16 @@ pub struct Hand {
     /// The bet associated with the hand
     pub bet:        f64,
 
-    /// Wether this hand was doubled down
+    /// Whether this hand was doubled down
     doubled:        bool,
 
-    /// Wether this hand is the result of a pair split
+    /// Whether this hand is the result of a pair split
     split:          bool,
 
-    /// Wether this hand was surrendered or not
+    /// Whether this hand was surrendered or not
     surrendered:    bool,
 
-    /// Wether this hand was insured or not
+    /// Whether this hand was insured or not
     insured:        bool,
 }
 
@@ -115,15 +115,15 @@ impl Hand {
         self.insured = true;
     }
 
-    /// Returns wether the hand is a natural blackjack or not
+    /// Returns whether the hand is a natural blackjack or not
     pub fn is_bj(&self) -> bool {
         !self.split && self.count() == 2 && self.value == 21
     }
 
-    /// Returns wether the hand is busted or not
+    /// Returns whether the hand is busted or not
     pub fn is_busted(&self) -> bool { self.is_busted }
 
-    /// Returns wether the hand is soft
+    /// Returns whether the hand is soft
     pub fn is_soft(&self) -> bool { self.is_soft }
 
     pub fn is_doubled(&self) -> bool { self.doubled }
