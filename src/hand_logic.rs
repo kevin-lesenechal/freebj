@@ -1,14 +1,23 @@
 use crate::hand::Hand;
 use crate::game_rules::DoublePolicy;
 
-/// The game outcome a played hand.
+/// The game outcome of a played hand.
 #[derive(PartialEq, Debug)]
 pub enum HandOutcome {
-    /// The hand won, which includes naturals, busted dealer, and won insured
-    /// hands that lost their insurance.
+    /// The hand is considered won when it either:
+    ///   * is not busted and has a higher score than the dealer;
+    ///   * is not busted and the dealer busted;
+    ///   * is a blackjack against a non-blackjack for the dealer;
+    /// If the hand was insured, whether the insurance bet won or lost has no
+    /// impact on the fact the hand is considered won or not.
     Win,
 
-    /// The hand was pushed, which includes an insured natural against one.
+    /// The hand is considered pushed when it either:
+    ///   * is not busted, is not a blackjack and has the same score as a dealer
+    ///     non-blackjack;
+    ///   * is a blackjack against a dealer blackjack.
+    /// If the hand was insured, whether the insurance bet won or lost has no
+    /// impact on the fact the hand is considered pushed or not.
     Push,
 
     /// The hand lose, which includes surrendered hands and lost insured hands
