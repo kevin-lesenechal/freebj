@@ -67,7 +67,7 @@ impl StandardShoe {
         }
     }
 
-    fn remove_high_card(&mut self) {
+    fn remove_high_card(&mut self) -> Card {
         let (card, card_alt) = if self.rng.gen_range(0..4) == 0 {
             (Card(1), Card(10))
         } else {
@@ -75,15 +75,15 @@ impl StandardShoe {
         };
         self.try_pick_first(card).or_else(|| {
             self.try_pick_first(card_alt)
-        }).expect("Not enough high cards to reach desired true count");
+        }).expect("Not enough high cards to reach desired true count")
     }
 
-    fn remove_low_card(&mut self) {
+    fn remove_low_card(&mut self) -> Card {
         let card_orig = self.rng.gen_range(2..7);
         let mut card = card_orig;
         loop {
-            if self.try_pick_first(Card(card)).is_some() {
-                break;
+            if let Some(c) = self.try_pick_first(Card(card)) {
+                break c;
             }
 
             card += 1;
@@ -136,15 +136,32 @@ impl CardShoe for StandardShoe {
         self.fill_cards();
         self.running_count = 0;
 
-        let to_remove = (true_count.abs() * self.decks as f32).round() as u32;
+        let mut prev = 0.0;
+        let mut prev_card = None;
 
-        for _ in 0..to_remove {
+        if true_count > 0.0 {
+            while self.true_count() < true_count {
+                prev = self.true_count();
+                prev_card = Some(self.remove_low_card());
+            }
+        } else if true_count < 0.0 {
+            while self.true_count() > true_count {
+                prev = self.true_count();
+                prev_card = Some(self.remove_high_card());
+            }
+        }
+
+        if (true_count - prev).abs() < (true_count - self.true_count()).abs() {
             if true_count > 0.0 {
-                self.remove_low_card();
+                if let Some(card) = prev_card {
+                    self.cards.push(card);
+                    self.running_count -= 1;
+                }
             } else if true_count < 0.0 {
-                self.remove_high_card();
-            } else {
-                break;
+                if let Some(card) = prev_card {
+                    self.cards.push(card);
+                    self.running_count += 1;
+                }
             }
         }
 
@@ -173,7 +190,7 @@ impl CardShoe for StandardShoe {
     }
 
     fn true_count(&self) -> f32 {
-        self.running_count as f32 / self.decks as f32
+        self.running_count as f32 / (self.cards.len() as f32 / 52.0)
     }
 }
 
@@ -197,6 +214,7 @@ mod tests {
     use crate::card::Card;
     use crate::shoe::standard_shoe::StandardShoe;
     use crate::shoe::CardShoe;
+    use crate::test_utils::assert_f64_eq;
 
     #[test]
     fn it_creates_a_one_deck_shoe() {
@@ -305,24 +323,24 @@ mod tests {
         shoe.force_true_count(3.0);
 
         assert_eq!(shoe.running_count(), 6);
-        assert_eq!(shoe.true_count(), 3.0);
+        assert_f64_eq(shoe.true_count() as f64, 3.184, 0.001);
 
         let mut shoe = StandardShoe::non_shuffled(2, 104);
 
-        shoe.force_true_count(-4.0);
+        shoe.force_true_count(-5.0);
 
-        assert_eq!(shoe.running_count(), -8);
-        assert_eq!(shoe.true_count(), -4.0);
+        assert_eq!(shoe.running_count(), -9);
+        assert_f64_eq(shoe.true_count() as f64, -4.926, 0.001);
     }
 
     #[test]
     fn it_removes_all_high_cards_single_deck() {
         let mut shoe = StandardShoe::non_shuffled(1, 52);
 
-        shoe.force_true_count(-20.0);
+        shoe.force_true_count(-32.5);
 
         assert_eq!(shoe.running_count(), -20);
-        assert_eq!(shoe.true_count(), -20.0);
+        assert_eq!(shoe.true_count(), -32.5);
         assert_eq!(shoe.cards.iter()
                        .filter(|&&c| c == Card(10) || c == Card(1))
                        .count(), 0);
@@ -332,17 +350,17 @@ mod tests {
     #[should_panic(expected = "Not enough high cards to reach desired true count")]
     fn it_panics_trying_to_remove_too_much_high_cards() {
         let mut shoe = StandardShoe::non_shuffled(1, 52);
-        shoe.force_true_count(-21.0);
+        shoe.force_true_count(-33.0);
     }
 
     #[test]
     fn it_removes_low_high_cards_single_deck() {
         let mut shoe = StandardShoe::non_shuffled(1, 52);
 
-        shoe.force_true_count(20.0);
+        shoe.force_true_count(32.5);
 
         assert_eq!(shoe.running_count(), 20);
-        assert_eq!(shoe.true_count(), 20.0);
+        assert_eq!(shoe.true_count(), 32.5);
         assert_eq!(shoe.cards.iter()
                        .filter(|&&c| c.0 >= 2 && c.0 <= 6)
                        .count(), 0);
@@ -352,6 +370,6 @@ mod tests {
     #[should_panic(expected = "Not enough low cards to reach desired true count")]
     fn it_panics_trying_to_remove_too_much_low_cards() {
         let mut shoe = StandardShoe::non_shuffled(1, 52);
-        shoe.force_true_count(21.0);
+        shoe.force_true_count(33.0);
     }
 }
