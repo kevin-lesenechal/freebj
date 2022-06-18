@@ -96,6 +96,7 @@ pub fn may_double(policy: DoublePolicy, das: bool, hand: &Hand) -> bool {
 
 #[cfg(test)]
 mod tests {
+    use crate::card::Card;
     use crate::hand_logic::{hand_result, may_double, HandOutcome};
     use crate::hand_logic::HandOutcome::*;
     use crate::hand::Hand;
@@ -136,8 +137,10 @@ mod tests {
         assert!(may_double(AnyHand,     true,   &Hand::from(&[4, 7][..])));
         assert!(may_double(AnyHand,     false,  &Hand::from(&[4, 7][..])));
         assert!(may_double(AnyHand,     false,  &Hand::from(&[4, 3, 8][..])));
-        let mut hand = Hand::from(&[4, 3, 8][..]);
+        let mut hand = Hand::from(&[4, 4][..]);
         hand.split();
+        hand.add(Card(3));
+        hand.add(Card(8));
         assert!(!may_double(AnyHand,    false,  &hand));
         assert!(may_double(AnyHand,     true,   &hand));
 
@@ -175,19 +178,22 @@ mod tests {
 
     fn test_hand_result(expected_outcome: HandOutcome,
                         expected_result: f64,
-                        player: &[u8],
+                        player_vals: &[u8],
                         dealer: &[u8],
                         opts: u32) {
-        let mut player = Hand::from(player);
+        let mut player = Hand::from(player_vals);
         if opts & DOUBLED > 0 { player.double_down(); }
         if opts & SURRENDERED > 0 { player.surrender(); }
         if opts & INSURED > 0 { player.insure(); }
-        if opts & SPLIT > 0 { player.split(); }
+        if opts & SPLIT > 0 {
+            player.split();
+            player.add(Card(player_vals[1]));
+        }
         let dealer = Hand::from(dealer);
 
         let (outcome, result) = hand_result(&player, &dealer);
 
-        assert_eq!(outcome, expected_outcome);
+        assert_eq!(outcome, expected_outcome, "\nplayer={player:?}\ndealer={dealer:?}");
         assert_eq!(result, expected_result);
     }
 }

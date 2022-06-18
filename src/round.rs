@@ -255,18 +255,12 @@ impl<'a> Round<'a> {
                 Decision::Split => {
                     assert!(self.context.may_split,
                             "Splitting is forbidden");
-                    let id = hand.id;
-                    let bet = hand.bet;
 
-                    self.hands_per_player[id as usize] += 1;
                     let common = hand[0];
-                    self.hands[i] = Hand::from(&[common, self.shoe.pick()][..]);
-                    self.hands[i].bet = bet;
-                    self.hands[i].split();
-                    let mut new_hand = Hand::from(&[common, self.shoe.pick()][..]);
-                    new_hand.id = id;
-                    new_hand.bet = bet;
-                    new_hand.split();
+                    let mut new_hand = hand.split();
+                    self.hands_per_player[hand.id as usize] += 1;
+                    hand.add(self.shoe.pick());
+                    new_hand.add(self.shoe.pick());
                     self.hands.push(new_hand);
 
                     if self.rules.play_ace_pairs || common != Card(1) {
@@ -374,6 +368,9 @@ mod tests {
         test_result(&[2, 7, 2, 10, 2, 9, 9, 8, 2, 2, 8, 2, 10, 10], AHC|S17,
                     &[Split, Split, Hit, Hit, Hit, Hit, Hit, Hit, Stand],
                     -10.0, (3, 1, 2, 0, 2, 0, 0, 3, 0, 0));
+        test_result(&[8, 1, 8,   10, 7, 6], ENHC|INSURE,
+                    &[Split, Stand, Stand],
+                    -5.0, (2, 1, 1, 0, 0, 0, 0, 2, 1, 0));
         //                 Tt Wo Lo Pu Bu BJ Db Sp In Su
     }
 

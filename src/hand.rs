@@ -95,11 +95,26 @@ impl Hand {
         self.doubled = true;
     }
 
-    pub fn split(&mut self) {
-        assert!(!self.split);
+    pub fn split(&mut self) -> Hand {
         assert!(!self.doubled);
         assert!(!self.surrendered);
+        assert!(!self.is_busted);
+        assert_eq!(self.cards.len(), 2);
         self.split = true;
+
+        // When removing one card from a pair hand, decreasing its value is
+        // enough. If the hand is soft (aces pair), it will remain soft (single
+        // ace), if it is not, it will remain hard. The hand can't be busted or
+        // be a blackjack. If the card to remove is an ace, we have a pair of
+        // aces, so the second ace is counted as 1.
+        let card = self.cards.pop().unwrap();
+        self.value -= card.0;
+
+        let mut new_hand = Hand::from(&[card][..]);
+        new_hand.bet = self.bet;
+        new_hand.split = true;
+
+        new_hand
     }
 
     pub fn surrender(&mut self) {
@@ -279,6 +294,60 @@ mod tests {
         test_hand(&[1, 10],     21, Some(true), Some(false), Some(true));
         test_hand(&[10, 1],     21, Some(true), Some(false), Some(true));
         test_hand(&[7, 7, 7],   21, Some(false), Some(false), Some(false));
+    }
+
+    #[test]
+    fn it_splits_88_pairs() {
+        let mut hand = Hand::from(&[8, 8][..]);
+        hand.bet = 40.0;
+
+        let mut new = hand.split();
+
+        hand.add(Card(10));
+        new.add(Card(8));
+
+        assert_eq!(hand.bet, 40.0);
+        assert_eq!(new.bet, 40.0);
+        assert!(hand.split);
+        assert!(new.split);
+        assert_eq!(hand.value, 18);
+        assert_eq!(new.value, 16);
+    }
+
+    #[test]
+    fn it_splits_aa_pairs() {
+        let mut hand = Hand::from(&[1, 1][..]);
+        hand.bet = 40.0;
+
+        let mut new = hand.split();
+
+        hand.add(Card(10));
+        new.add(Card(8));
+
+        assert_eq!(hand.bet, 40.0);
+        assert_eq!(new.bet, 40.0);
+        assert!(hand.split);
+        assert!(new.split);
+        assert_eq!(hand.value, 21);
+        assert_eq!(new.value, 19);
+        assert!(hand.is_soft);
+        assert!(new.is_soft);
+        assert!(!hand.is_bj());
+    }
+
+    #[test]
+    fn it_splits_insured_pairs() {
+        let mut hand = Hand::from(&[8, 8][..]);
+        hand.bet = 40.0;
+        hand.insure();
+
+        let mut new = hand.split();
+
+        hand.add(Card(10));
+        new.add(Card(8));
+
+        assert!(hand.insured);
+        assert!(!new.insured);
     }
 
     fn test_hand(cards: &[u8],
