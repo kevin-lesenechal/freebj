@@ -3,7 +3,7 @@ use freebj::game_rules::{SurrenderPolicy, DoublePolicy, GameType, Soft17};
 use freebj::game_rules::SurrenderPolicy::NoSurrender;
 use freebj::game_rules::DoublePolicy::AnyTwo;
 use std::process::exit;
-use clap::ArgMatches;
+use clap::{ArgMatches, crate_version};
 use freebj::game_rules::GameType::{Ahc, Enhc};
 use freebj::game_rules::Soft17::{S17, H17};
 use freebj::strategy::Decision;
@@ -106,7 +106,7 @@ impl Options {
         let mut options: Options = Default::default();
 
         let matches = clap::App::new("FreeBJ")
-            .version("1.0")
+            .version(crate_version!())
             .about("Blackjack game and strategy simulator")
             .author("Kévin Lesénéchal")
             .max_term_width(80)
