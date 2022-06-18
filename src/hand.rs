@@ -111,6 +111,7 @@ impl Hand {
         self.value -= card.0;
 
         let mut new_hand = Hand::from(&[card][..]);
+        new_hand.id = self.id;
         new_hand.bet = self.bet;
         new_hand.split = true;
 
@@ -299,6 +300,7 @@ mod tests {
     #[test]
     fn it_splits_88_pairs() {
         let mut hand = Hand::from(&[8, 8][..]);
+        hand.id = 4;
         hand.bet = 40.0;
 
         let mut new = hand.split();
@@ -306,6 +308,8 @@ mod tests {
         hand.add(Card(10));
         new.add(Card(8));
 
+        assert_eq!(hand.id, 4);
+        assert_eq!(new.id, 4);
         assert_eq!(hand.bet, 40.0);
         assert_eq!(new.bet, 40.0);
         assert!(hand.split);
